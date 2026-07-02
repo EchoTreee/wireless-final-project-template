@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 
@@ -61,14 +62,27 @@ def _make_plots(result: dict, results_dir: Path, seed: int) -> None:
     plt.close()
 
 
+def _snr_arg(value: str) -> float:
+    """argparse type for --snr: must be a finite number within [-50, 100] dB."""
+    try:
+        f = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid SNR (not a number): {value!r}")
+    if not math.isfinite(f) or not (-50.0 <= f <= 100.0):
+        raise argparse.ArgumentTypeError(f"SNR out of valid range [-50, 100] dB: {value!r}")
+    return f
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Wireless baseband file transmission simulator")
     parser.add_argument("--input", required=True, help="input UTF-8 text file")
     parser.add_argument("--output", default="results/received.txt", help="recovered text output path")
-    parser.add_argument("--snr", type=float, default=12.0, help="signal-to-noise ratio in dB")
+    parser.add_argument("--snr", type=_snr_arg, default=12.0, help="SNR in dB (valid range [-50, 100])")
     parser.add_argument("--seed", type=int, default=2026, help="random seed for reproducibility")
-    parser.add_argument("--mod", default="qpsk", help="modulation: qpsk / bpsk")
-    parser.add_argument("--channel", default="awgn", help="channel: awgn / rayleigh / rician")
+    parser.add_argument("--mod", choices=["qpsk", "bpsk", "16qam", "qam16"], default="qpsk",
+                        help="modulation scheme")
+    parser.add_argument("--channel", choices=["awgn", "rayleigh", "rician"], default="awgn",
+                        help="channel model")
     parser.add_argument("--code", default="conv", help="channel code: conv / hamming")
     args = parser.parse_args()
 

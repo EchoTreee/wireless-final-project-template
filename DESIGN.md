@@ -196,6 +196,7 @@ received.txt ◄─ Source Decode ◄─ Decrypt/Descramble ◄─ Channel Decod
 - **信道**：按 `cfg.channel` 施加 AWGN/衰落，并在帧前插入随机偏移（由 seed 决定）。
 - **接收 `receive(symbols, cfg)`**：`synchronize → (均衡) → demodulate → parse_frame → channel_decode → descramble → 取前 orig_len → source_decode`。
 - **`main.py`**：`argparse` 解析 `--input --output --snr --seed --mod --channel`，**非交互**，生成 `received.txt`、`metrics.json` 与图表，正常退出码 0（满足 `TC-T-014~017`）。
+- **参数校验（v0.3）**：`--mod`/`--channel` 用白名单 `choices` 限定，`--snr` 校验为 [-50, 100] dB 内的有限数；非法输入以非 0 退出码 + 明确错误信息拒绝，**不静默 fallback**（针对异常输入鲁棒性，见附录 A v0.3）。
 
 ---
 
@@ -247,3 +248,4 @@ received.txt ◄─ Source Decode ◄─ Decrypt/Descramble ◄─ Channel Decod
 
 - v0.1（初版）：本文档，mock 前设计基线。
 - v0.2（mock 修订）：mock 测试发现帧头 `length` 字段在 PRD 链路顺序下不受 FEC 保护，低 SNR 单比特错误即破坏 framing；**修订为对 `orig_len`/`coded_len` 做 3× 重复 + 多数判决保护**，并经 `mock/mock_fix_verify.py` 验证（header 损坏率 6 dB 由 11→1、4 dB 由 18→6）。详见 `MOCK_TEST_REPORT.md`。
+- v0.3（讲评修订）：据老师课堂隐藏测试讲评（`invalid_snr` 全班 20/20、`invalid_modulation` 5 份），补齐 CLI 参数校验——`--mod`/`--channel` 白名单化、`--snr` 范围校验，非法输入明确拒绝而非静默 fallback；新增 `tests/test_cli_validation.py`（5 项）。详见 `AI_LOG.md` 阶段 6。
